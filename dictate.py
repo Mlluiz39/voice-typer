@@ -40,7 +40,7 @@ from pathlib import Path
 
 from detect_key import EVENT_FMT, EVENT_SIZE, EV_KEY, is_button, keyboard_devices, key_name
 from inject import paste_text, sanitize, type_text
-from correct import DEFAULT_PATH as DEFAULT_CORRECTIONS, apply_corrections, load_corrections
+from correct import apply_corrections, load_corrections
 from record import Recorder, classify, clip_stats, levels
 from refine import Refiner, needs_refine
 from stt import Transcriber
@@ -193,6 +193,34 @@ DEFAULT_SETTINGS = {
     "no_sound": False,
     "delay": 15,
 }
+
+
+def resolver_vocabulario(caminho: str | Path | None = None) -> list[str]:
+    """Termos de hotwords: arquivo explícito, ou usuário + projeto combinados.
+
+    Centralizado aqui porque o daemon e o `--doctor` precisam concordar. Uma vez
+    divergiram: o doctor usava um caminho relativo único e reportava 0 termos
+    enquanto o daemon carregava 7.
+    """
+    fontes = [Path(caminho)] if caminho else list(_candidatos("vocabulary.txt"))
+    termos: list[str] = []
+    for arq in fontes:
+        if not arq.exists():
+            continue
+        for ln in arq.read_text(encoding="utf-8").splitlines():
+            ln = ln.strip()
+            if ln and not ln.startswith("#") and ln not in termos:
+                termos.append(ln)
+    return termos
+
+
+def resolver_regras(caminho: str | Path | None = None) -> list:
+    """Regras de correção: arquivo explícito, ou usuário + projeto combinados."""
+    fontes = [Path(caminho)] if caminho else list(_candidatos("corrections.txt"))
+    regras: list = []
+    for arq in fontes:
+        regras.extend(load_corrections(arq))
+    return regras
 
 
 def load_settings(path: Path | None = None) -> dict:
@@ -425,14 +453,12 @@ def doctor(args) -> int:
     linha("modelo", True, f"{args.model} (carrega no início)")
 
     print("\n4) regras locais")
-    regras = load_corrections(args.corrections)
+    regras = resolver_regras(args.corrections)
     linha("correções", True, f"{len(regras)} regra(s)")
-    vocab = Path(args.vocabulary)
-    termos = [
-        ln.strip() for ln in vocab.read_text(encoding="utf-8").splitlines()
-        if ln.strip() and not ln.strip().startswith("#")
-    ] if vocab.exists() else []
+    termos = resolver_vocabulario(args.vocabulary)
     linha("vocabulário", True, f"{len(termos)} termo(s)")
+    if not termos and not regras:
+        print("         (nenhum termo pessoal em ~/.config/voice-typer/)")
 
     print("\n5) refino")
     if args.refine == "never":
@@ -472,10 +498,10 @@ def main(argv: list[str]) -> int:
                     help="delay por caractere no type (ms). Digitar rápido faz apps Electron perderem teclas")
     ap.add_argument("--paste-above", type=int, default=cfg["paste_above"],
                     help="com --method auto, cola em vez de digitar acima deste tamanho (padrão 80)")
-    ap.add_argument("--vocabulary", default="vocabulary.txt",
-                    help="arquivo de vocabulário (uma expressão por linha) usado como hotwords")
-    ap.add_argument("--corrections", default=str(DEFAULT_CORRECTIONS),
-                    help="arquivo de correções literais aplicadas após a transcrição")
+    ap.add_argument("--vocabulary", default=None,
+                    help="arquivo de vocabulário explícito (padrão: usuário + projeto)")
+    ap.add_argument("--corrections", default=None,
+                    help="arquivo de correções explícito (padrão: usuário + projeto)")
     ap.add_argument("--no-correct", action="store_true", help="não aplicar correções literais")
     ap.add_argument("--refine", nargs="?", const="auto", default=cfg["refine"],
                     choices=("never", "auto", "always"),
@@ -510,17 +536,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     # Modelo carrega no início: a primeira ditada não paga a carga.
-    hotwords: list[str] = []
-    arquivos_vocab = [Path(args.vocabulary)] + [
-        c for c in _candidatos("vocabulary.txt") if str(c) != args.vocabulary
-    ]
-    for vocab in arquivos_vocab:
-        if not vocab.exists():
-            continue
-        for ln in vocab.read_text(encoding="utf-8").splitlines():
-            ln = ln.strip()
-            if ln and not ln.startswith("#") and ln not in hotwords:
-                hotwords.append(ln)
+    hotwords = resolver_vocabulario(args.vocabulary)
     refiner: Refiner | None = None
     if args.refine != "never":
         refiner = Refiner(
@@ -529,12 +545,7 @@ def main(argv: list[str]) -> int:
             timeout=args.refine_timeout,
         )
         print(f"refino: {refiner.target}")
-    regras: list = []
-    if not args.no_correct:
-        for arq in [Path(args.corrections)] + [
-            c for c in _candidatos("corrections.txt") if str(c) != args.corrections
-        ]:
-            regras.extend(load_corrections(arq))
+    regras = [] if args.no_correct else resolver_regras(args.corrections)
     if hotwords:
         print(f"vocabulário: {len(hotwords)} termo(s)")
     if regras:
