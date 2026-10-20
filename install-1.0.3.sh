@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-1.0.2.sh — instala/atualiza o voice-typer e recarrega o serviço.
+# install-1.0.3.sh — instala/atualiza o voice-typer e recarrega o serviço.
 #
 # O `daemon-reload` e o `restart` no fim não são opcionais: a unidade nova vai
 # para /usr/lib/systemd/user/, mas o systemd só relê o arquivo depois do reload.
@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-DEB="voice-typer_1.0.2_amd64.deb"
+DEB="voice-typer_1.0.3_amd64.deb"
 [ -f "$DEB" ] || { echo "pacote $DEB não encontrado"; exit 1; }
 
 echo "==> instalando $DEB"

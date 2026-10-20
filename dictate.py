@@ -340,6 +340,21 @@ def load_env_file(path: Path | None = None) -> None:
             os.environ[chave] = valor
 
 
+def comando_reexec(python: str, script: str, args: list[str]) -> str:
+    """Monta o comando que o `sg` vai executar via `sh -c`.
+
+    A ordem importa: o `-u` é uma flag do Python e precisa vir **depois** do
+    interpretador. Colocá-lo no começo faz o shell interpretá-lo como opção
+    própria (`sh: 0: Illegal option -`) e o serviço entra em crash-loop.
+
+    O `-u` é necessário porque, sem ele, o processo re-executado bufferiza o
+    stdout e o log de partida não aparece no journal.
+    """
+    partes = ["'" + python + "'", "'-u'", "'" + script + "'"]
+    partes += ["'" + a + "'" for a in args]
+    return " ".join(partes)
+
+
 def maybe_reexec_in_input_group() -> None:
     """Re-executa com o grupo `input` quando ele não está no conjunto atual.
 
@@ -365,11 +380,7 @@ def maybe_reexec_in_input_group() -> None:
         print("aviso: grupo `input` ausente e `sg` indisponível", file=sys.stderr)
         return
     print("(re-executando com o grupo `input` via sg)")
-    # -u explícito: sem ele o processo re-executado bufferiza o stdout e o log
-    # fica invisível no journal até o encerramento, o que torna o serviço
-    # impossível de diagnosticar.
-    cmd = " ".join(["-u", "'" + sys.executable + "'", "'" + str(Path(__file__).resolve()) + "'"]
-                   + ["'" + a + "'" for a in sys.argv[1:]])
+    cmd = comando_reexec(sys.executable, str(Path(__file__).resolve()), sys.argv[1:])
     env = dict(os.environ, VT_INPUT_GROUP="1")
     os.execve(sg, [sg, "input", "-c", cmd], env)
 

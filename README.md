@@ -123,7 +123,7 @@ systemctl --user daemon-reload      # <- não é opcional
 systemctl --user restart voice-typer
 ```
 
-O script `install-1.0.2.sh` faz os três passos e mostra o log de partida.
+O script `install-1.0.3.sh` faz os três passos e mostra o log de partida.
 
 ### A partir do código
 

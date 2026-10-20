@@ -19,6 +19,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import gi
@@ -58,7 +59,43 @@ KEYS = {
 }
 
 ICONE = {"idle": "audio-input-microphone", "recording": "media-record",
-         "processing": "process-working", "stopped": "audio-input-microphone"}
+         "processing": "process-working", "stopped": "audio-input-microphone",
+         "error": "dialog-warning"}
+
+# Idade máxima do status.json para confiar nele. Um arquivo velho descreve a
+# execução anterior, não a atual.
+STATUS_MAX_IDADE_S = 180
+
+
+def estado_servico() -> str:
+    """Estado textual do serviço (active, inactive, failed, activating…)."""
+    code, saida = systemctl("is-active", SERVICE)
+    return (saida.strip().splitlines() or [""])[0] or ("active" if code == 0 else "inactive")
+
+
+def estado_exibicao() -> tuple[str, str]:
+    """Devolve (chave_do_icone, rótulo_para_o_usuário).
+
+    O status.json só é considerado se for recente. Antes, um arquivo antigo fazia
+    a bandeja mostrar "serviço parado" com o daemon ativo — e um crash-loop
+    aparecia como "parado", escondendo a causa.
+    """
+    st = estado_servico()
+    if st in ("inactive", "deactivating", "unknown", ""):
+        return "stopped", "serviço parado"
+    if st == "failed":
+        return "error", "serviço falhou"
+    if st in ("activating", "reloading"):
+        return "idle", "iniciando…"
+
+    dados = ler_json(STATUS)
+    idade = time.time() - float(dados.get("ts") or 0)
+    if dados and idade <= STATUS_MAX_IDADE_S:
+        s = dados.get("state", "idle")
+        rotulos = {"idle": "pronto", "recording": "gravando…", "processing": "transcrevendo…"}
+        if s in rotulos:
+            return s, rotulos[s]
+    return "idle", "pronto"
 
 
 def systemctl(*args: str) -> tuple[int, str]:
@@ -298,20 +335,23 @@ class Aplicativo:
         self.janela = None
 
     def _alternar_servico(self, *_):
-        code, _ = systemctl("is-active", SERVICE)
-        systemctl("stop" if code == 0 else "start", SERVICE)
+        # 'activating' também conta como ligado: sem isso, clicar em Iniciar
+        # durante um crash-loop disparava outro start.
+        st = estado_servico()
+        if st in ("active", "activating", "reloading"):
+            systemctl("stop", SERVICE)
+        else:
+            systemctl("start", SERVICE)
         self._atualizar()
 
     def _atualizar(self):
-        ativo, _ = systemctl("is-active", SERVICE)
-        st = ler_json(STATUS)
-        estado = st.get("state", "stopped") if ativo == 0 else "stopped"
+        estado, rotulo = estado_exibicao()
         if self.ind is not None:
             self.ind.set_icon_full(ICONE.get(estado, "audio-input-microphone"), estado)
-        rotulo = {"idle": "pronto", "recording": "gravando…",
-                  "processing": "transcrevendo…", "stopped": "serviço parado"}.get(estado, estado)
         self.item_estado.set_label(f"voice-typer: {rotulo}")
-        self.item_servico.set_label("Parar serviço" if ativo == 0 else "Iniciar serviço")
+        self.item_servico.set_label(
+            "Parar serviço" if estado in ("idle", "recording", "processing") else "Iniciar serviço"
+        )
         return True
 
 

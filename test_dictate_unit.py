@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 import unittest
 
-from dictate import MIN_TOGGLE_INTERVAL_S, ToggleGate
+from dictate import MIN_TOGGLE_INTERVAL_S, ToggleGate, comando_reexec
 
 PAUSE = 119
 SCROLL = 70
@@ -74,6 +74,47 @@ class TestToggleGate(unittest.TestCase):
         self.assertFalse(g.feed(PAUSE, PRESS, 1.0))
         g.feed(PAUSE, RELEASE, 1.1)
         self.assertTrue(g.feed(PAUSE, PRESS, 6.0))
+
+
+class TestComandoReexec(unittest.TestCase):
+    """Regressão real: o `sg` executa o comando via `sh -c`.
+
+    Uma versão anterior colocou o `-u` antes do interpretador e o serviço entrou
+    em crash-loop com `sh: 0: Illegal option -`. Os testes de shell não pegaram
+    porque o ambiente de teste já tinha o grupo `input`, então o re-exec nunca
+    era exercitado.
+    """
+
+    def _cmd(self, args=None):
+        return comando_reexec("/usr/bin/python3", "/opt/vt/dictate.py", args or [])
+
+    def test_primeiro_token_e_o_interpretador_nao_uma_flag(self):
+        import shlex
+
+        partes = shlex.split(self._cmd(["--refine"]))
+        self.assertFalse(partes[0].startswith("-"), f"começa com flag: {partes[0]}")
+        self.assertEqual(partes[0], "/usr/bin/python3")
+
+    def test_flag_u_vem_depois_do_interpretador(self):
+        import shlex
+
+        partes = shlex.split(self._cmd())
+        self.assertIn("-u", partes)
+        self.assertEqual(partes.index("-u"), 1)
+
+    def test_shell_consegue_interpretar(self):
+        import subprocess
+
+        r = subprocess.run(["sh", "-n", "-c", self._cmd(["--refine", "auto"])],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, f"sh rejeitou o comando: {r.stderr.strip()}")
+
+    def test_argumentos_preservados(self):
+        import shlex
+
+        partes = shlex.split(self._cmd(["--key", "70"]))
+        self.assertIn("--key", partes)
+        self.assertIn("70", partes)
 
 
 if __name__ == "__main__":
