@@ -111,6 +111,20 @@ O pacote instala em `/opt/voice-typer`, cria os comandos `voice-typer` e
 `voice-typer-gui`, registra o item na gaveta de aplicativos e habilita o serviço
 no login. Inclui o ambiente Python pronto, então **não precisa de rede**.
 
+### Ao atualizar, recarregue o serviço
+
+O `.deb` traz a unidade systemd em `/usr/lib/systemd/user/`, mas o systemd só relê
+esse arquivo depois de um `daemon-reload`. Sem ele, o serviço continua rodando com
+a unidade antiga carregada em memória:
+
+```bash
+sudo apt install ./voice-typer_<versao>_amd64.deb
+systemctl --user daemon-reload      # <- não é opcional
+systemctl --user restart voice-typer
+```
+
+O script `install-1.0.2.sh` faz os três passos e mostra o log de partida.
+
 ### A partir do código
 
 ```bash
