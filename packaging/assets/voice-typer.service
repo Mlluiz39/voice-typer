@@ -8,8 +8,8 @@ PartOf=graphical-session.target
 Type=simple
 WorkingDirectory=@PREFIX@
 ExecStart=@PREFIX@/.venv/bin/python -u @PREFIX@/dictate.py
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=3
 # Sem NoNewPrivileges: o daemon se re-executa com `sg input` para ler
 # /dev/input, e isso exige setgid/setgroups.
 

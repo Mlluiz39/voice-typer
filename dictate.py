@@ -365,7 +365,10 @@ def maybe_reexec_in_input_group() -> None:
         print("aviso: grupo `input` ausente e `sg` indisponível", file=sys.stderr)
         return
     print("(re-executando com o grupo `input` via sg)")
-    cmd = " ".join(["'" + sys.executable + "'", "'" + str(Path(__file__).resolve()) + "'"]
+    # -u explícito: sem ele o processo re-executado bufferiza o stdout e o log
+    # fica invisível no journal até o encerramento, o que torna o serviço
+    # impossível de diagnosticar.
+    cmd = " ".join(["-u", "'" + sys.executable + "'", "'" + str(Path(__file__).resolve()) + "'"]
                    + ["'" + a + "'" for a in sys.argv[1:]])
     env = dict(os.environ, VT_INPUT_GROUP="1")
     os.execve(sg, [sg, "input", "-c", cmd], env)
@@ -580,6 +583,10 @@ def main(argv: list[str]) -> int:
 
     print(f"atalho: {label} (code {args.key})  |  {len(handles)} teclado(s)")
     print(f"aperte {label} para começar/parar. Ctrl+C sai.\n")
+    # Estado inicial explícito: sem isso o status.json fica com o valor da
+    # execução anterior ("stopped"), e a bandeja exibe "serviço parado" com o
+    # daemon ativo.
+    write_status("idle")
 
     try:
         while not parar["sim"]:
