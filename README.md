@@ -17,6 +17,7 @@ O refino por LLM é opcional e plugável.
 
 - [Recursos](#recursos)
 - [Requisitos](#requisitos)
+- [Capturas](#capturas)
 - [Instalação](#instalação)
 - [Uso](#uso)
 - [Configuração](#configuração)
@@ -25,6 +26,7 @@ O refino por LLM é opcional e plugável.
 - [Solução de problemas](#solução-de-problemas)
 - [Desenvolvimento](#desenvolvimento)
 - [Limitações](#limitações)
+- [Contribuindo](#contribuindo)
 - [Licença](#licença)
 
 ## Recursos
@@ -49,6 +51,16 @@ O refino por LLM é opcional e plugável.
   `pipewire-bin` ou `pulseaudio-utils`
 - Para a interface gráfica: `python3-gi`, `gir1.2-gtk-3.0`,
   `gir1.2-appindicator3-0.1`
+
+## Capturas
+
+| Configuração | Ícone |
+| --- | --- |
+| ![Janela de configuração do voice-typer](docs/settings.png) | ![Ícone](packaging/assets/voice-typer.svg) |
+
+As imagens são geradas por `docs/capture-screenshots.py`, que renderiza a janela
+real fora da tela (`Gtk.OffscreenWindow`) — reproduzível e sem capturar nada além
+do próprio aplicativo. Regenere após mudanças na interface.
 
 ## Instalação
 
@@ -321,6 +333,11 @@ Gerar o pacote:
 - **Um ditado por captura.** O modelo usa janelas de 30 s; falas mais longas ficam
   menos precisas — divida em partes.
 - **`.deb` de 88 MB** por incluir o ambiente Python completo (428 MB instalado).
+
+## Contribuindo
+
+Veja [CONTRIBUTING.md](CONTRIBUTING.md): como preparar o ambiente, rodar as
+verificações, os princípios do projeto e o que incluir ao reportar um problema.
 
 ## Licença
 

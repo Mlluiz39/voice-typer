@@ -96,16 +96,20 @@ def abrir_arquivo(caminho: Path) -> None:
                      start_new_session=True)
 
 
-class JanelaConfig(Gtk.Window):
+class PainelConfig(Gtk.Box):
+    """Árvore de widgets da configuração, sem janela.
+
+    Separado do `Gtk.Window` para poder ser renderizado fora da tela (geração das
+    imagens do README) e testado sem abrir janela.
+    """
+
     def __init__(self, ao_salvar) -> None:
-        super().__init__(title="voice-typer — configuração")
-        self.set_default_size(460, -1)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         self.set_border_width(16)
         self.ao_salvar = ao_salvar
         cfg = ler_settings()
 
-        caixa = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.add(caixa)
+        caixa = self
 
         titulo = Gtk.Label()
         titulo.set_markup("<b>Configuração do ditado</b>")
@@ -191,6 +195,7 @@ class JanelaConfig(Gtk.Window):
         self.status.set_line_wrap(True)
         caixa.pack_start(self.status, False, False, 0)
 
+
     def coletar(self) -> dict:
         return {
             "key": int(self.combo_tecla.get_active_id() or 119),
@@ -229,6 +234,15 @@ class JanelaConfig(Gtk.Window):
         except (OSError, subprocess.SubprocessError) as exc:
             self.status.set_text(f"falhou: {exc}")
 
+
+class JanelaConfig(Gtk.Window):
+    """Janela que hospeda o painel. Invólucro fino de propósito."""
+
+    def __init__(self, ao_salvar) -> None:
+        super().__init__(title="voice-typer — configuração")
+        self.set_default_size(460, -1)
+        self.painel = PainelConfig(ao_salvar)
+        self.add(self.painel)
 
 class Aplicativo:
     def __init__(self) -> None:
