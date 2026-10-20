@@ -16,6 +16,7 @@ O refino por LLM é opcional e plugável.
 ## Índice
 
 - [Recursos](#recursos)
+- [Ambiente validado](#ambiente-validado)
 - [Requisitos](#requisitos)
 - [Capturas](#capturas)
 - [Instalação](#instalação)
@@ -40,6 +41,39 @@ O refino por LLM é opcional e plugável.
 | Interface gráfica | Ícone de bandeja com estado, mais janela de configuração (GTK3) |
 | Serviço de usuário | Sobe no login via systemd |
 | Pacote `.deb` | Autocontido, sem rede na instalação |
+
+## Ambiente validado
+
+O desenvolvimento e todos os números deste README vêm de uma única máquina. Se
+você usa outro ambiente, trate como **não validado** — pode funcionar, mas ninguém
+verificou.
+
+| Item | Valor |
+| --- | --- |
+| Distribuição | Pop!_OS 24.04 LTS, kernel 7.1.5 |
+| Sessão | Wayland (`XDG_SESSION_TYPE=wayland`) |
+| Compositor | **COSMIC** (`cosmic-comp 1.0.0`) |
+| CPU | Intel i5-1135G7 (4 núcleos / 8 threads, AVX512_VNNI) |
+| GPU | Intel Iris Xe — **sem CUDA**, transcrição é CPU-only |
+| Python | 3.12.3 (sistema) · venv para o faster-whisper |
+| GTK | 3.24 (interface gráfica) |
+| ffmpeg | 6.1.1 |
+| Terminais testados | kitty 0.49.2, cosmic-term 1.9.0 |
+
+### O que é sensível ao ambiente
+
+- **Injeção de texto** depende de `zwp_virtual_keyboard_v1`. COSMIC expõe esse
+  protocolo (verificado); GNOME e KDE não foram testados, e o suporte varia.
+- **Atalho global** lê `/dev/input` diretamente, então independe do compositor —
+  mas exige o grupo `input`.
+- **Atalho de colar** difere por terminal: `Ctrl+Shift+V` na maioria,
+  `Ctrl+V` em aplicativos gráficos. Daí a opção `--terminal`.
+- **Desempenho** é da CPU. Sem GPU não há aceleração; os tempos da seção
+  [Desempenho](#desempenho) refletem um i5 de 11ª geração com o desktop ocupado.
+
+Se você testar em outra combinação, uma issue com a saída de `voice-typer --doctor`
+e a linha de `~/.local/state/voice-typer/dictations.jsonl` é a informação mais
+útil possível.
 
 ## Requisitos
 
@@ -323,7 +357,9 @@ Gerar o pacote:
 
 ## Limitações
 
-- **Wayland apenas.** A injeção usa `zwp_virtual_keyboard_v1`.
+- **Wayland apenas, e validado só em COSMIC.** A injeção usa
+  `zwp_virtual_keyboard_v1`; outros compositores não foram testados.
+- **CPU-only.** Sem aceleração por GPU; os tempos são de um i5 de 11ª geração.
 - **Sem detecção de campo de senha.** O texto é inserido mesmo em campos sensíveis;
   evite ditar com foco em um.
 - **Sem plano B para apps que rejeitem teclado virtual.** Uma engine IBus própria
