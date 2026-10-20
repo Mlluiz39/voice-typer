@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+USUARIO="${SUDO_USER:-$USER}"
+if [ -n "$USUARIO" ] && [ "$USUARIO" != "root" ]; then
+  HOME_USUARIO=$(getent passwd "$USUARIO" | cut -d: -f6)
+  rm -f "$HOME_USUARIO/.config/systemd/user/graphical-session.target.wants/voice-typer.service" 2>/dev/null || true
+fi
+exit 0

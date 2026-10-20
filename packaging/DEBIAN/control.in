@@ -1,0 +1,16 @@
+Package: voice-typer
+Version: @VERSAO@
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: mlluiz <mlluiz@localhost>
+Installed-Size: @TAMANHO@
+Depends: python3 (>= 3.10), libgtk-3-0, python3-gi, gir1.2-gtk-3.0, gir1.2-appindicator3-0.1, ffmpeg, pipewire-bin | pulseaudio-utils, libnotify-bin, wtype, wl-clipboard, systemd
+Recommends: libayatana-appindicator3-1
+Description: Ditado por voz para qualquer aplicativo no Linux
+ Fale e o texto aparece no campo focado de qualquer app: WhatsApp Web, Slack,
+ editores de codigo, aplicativos Electron e terminais.
+ .
+ Transcricao local com faster-whisper (CPU, int8), atalho global lido por evdev,
+ injecao de texto por wtype ou colagem, correcoes locais e refino opcional por
+ LLM compativel com a API da OpenAI.

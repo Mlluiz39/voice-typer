@@ -1,0 +1,21 @@
+# Correções aplicadas depois da transcrição.
+#
+#   errado => certo        literal, respeita fronteira de palavra, ignora caixa
+#   re:padrão => certo     expressão regular
+#
+# Use para erros SISTEMÁTICOS que se repetem de forma reconhecível. Para
+# vocabulário geral (nomes, jargão), prefira vocabulary.txt, que influencia o
+# próprio modelo em vez de corrigir depois.
+#
+# Este arquivo é o template público. Suas regras pessoais ficam em
+#   ~/.config/voice-typer/corrections.txt
+#
+# Atenção: o erro de ASR costuma MUDAR de forma entre ditadas, então regra
+# literal sozinha envelhece. Quando a variação existe, descreva a família com
+# regex.
+
+# exemplo literal
+# perdeu o foco => perdeu o foco
+
+# exemplo de regex: cobre "e tem a vista que", "tenho em vista que", etc.
+# re:\b(?:e\s+)?t(?:enho|endo|em)\s+(?:em\s+|a\s+)?vista\s+que\b => tendo em vista que

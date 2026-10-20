@@ -1,0 +1,78 @@
+#!/bin/bash
+set -e
+PREFIX=/opt/voice-typer
+USUARIO="${SUDO_USER:-$USER}"
+[ "$USUARIO" = "root" ] && USUARIO="${PKEXEC_UID:+$(id -un "$PKEXEC_UID")}"
+[ -z "$USUARIO" ] || [ "$USUARIO" = "root" ] && USUARIO="$(loginctl list-users --no-legend 2>/dev/null | awk '{print $2; exit}')"
+
+# --- grupo input: ler /dev/input para o atalho global ---
+if ! getent group input >/dev/null 2>&1; then
+  groupadd --system input 2>/dev/null || true
+fi
+if [ -n "$USUARIO" ] && [ "$USUARIO" != "root" ]; then
+  usermod -aG input "$USUARIO" 2>/dev/null || true
+fi
+
+# --- uinput: necessário para o teclado sintético dos testes ---
+if [ -d /etc/udev/rules.d ]; then
+  printf '%s\n' 'ACTION!="remove", KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput", TAG+="uaccess"' \
+    > /etc/udev/rules.d/70-uinput-uaccess.rules
+fi
+if [ -d /etc/modules-load.d ]; then
+  printf 'uinput\n' > /etc/modules-load.d/voice-typer-uinput.conf
+  modprobe uinput >/dev/null 2>&1 || true
+fi
+if command -v udevadm >/dev/null 2>&1; then
+  udevadm control --reload-rules >/dev/null 2>&1 || true
+  udevadm trigger --subsystem-match=misc --action=add >/dev/null 2>&1 || true
+fi
+
+# --- configuração do usuário ---
+if [ -n "$USUARIO" ] && [ "$USUARIO" != "root" ]; then
+  HOME_USUARIO=$(getent passwd "$USUARIO" | cut -d: -f6)
+  if [ -n "$HOME_USUARIO" ] && [ -d "$HOME_USUARIO" ]; then
+    install -d -o "$USUARIO" -g "$(id -gn "$USUARIO")" "$HOME_USUARIO/.config/voice-typer"
+    install -d -o "$USUARIO" -g "$(id -gn "$USUARIO")" "$HOME_USUARIO/.local/state/voice-typer"
+    if [ ! -f "$HOME_USUARIO/.config/voice-typer/llm.env" ]; then
+      install -o "$USUARIO" -g "$(id -gn "$USUARIO")" -m 600 \
+        "$PREFIX/llm.env.example" "$HOME_USUARIO/.config/voice-typer/llm.env"
+    fi
+    # habilita o serviço de usuário sem exigir que o usuário rode systemctl
+    install -d -o "$USUARIO" -g "$(id -gn "$USUARIO")" \
+      "$HOME_USUARIO/.config/systemd/user/graphical-session.target.wants"
+    ln -sf /usr/lib/systemd/user/voice-typer.service \
+      "$HOME_USUARIO/.config/systemd/user/graphical-session.target.wants/voice-typer.service"
+    chown -h "$USUARIO:$(id -gn "$USUARIO")" \
+      "$HOME_USUARIO/.config/systemd/user/graphical-session.target.wants/voice-typer.service" 2>/dev/null || true
+  fi
+fi
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+  gtk-update-icon-cache -q /usr/share/icons/hicolor >/dev/null 2>&1 || true
+fi
+
+cat <<FIM
+
+voice-typer instalado.
+
+  1. Entre no grupo input (o instalador já adicionou):
+       newgrp input     # nesta sessão
+     ou simplesmente encerre e abra a sessão novamente.
+
+  2. O serviço sobe no próximo login. Para iniciar agora:
+       systemctl --user daemon-reload
+       systemctl --user start voice-typer
+
+  3. Interface: procure "voice-typer" na gaveta de aplicativos,
+     ou rode: voice-typer-gui
+
+  4. Refino por LLM (opcional): edite
+       ~/.config/voice-typer/llm.env
+
+  Dica: 'voice-typer --doctor' verifica toda a stack.
+
+FIM
+exit 0

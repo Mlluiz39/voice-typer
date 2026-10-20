@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+if [ "$1" = "purge" ]; then
+  rm -f /etc/udev/rules.d/70-uinput-uaccess.rules
+  rm -f /etc/modules-load.d/voice-typer-uinput.conf
+  if command -v udevadm >/dev/null 2>&1; then
+    udevadm control --reload-rules >/dev/null 2>&1 || true
+  fi
+fi
+exit 0

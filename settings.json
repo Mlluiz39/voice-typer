@@ -1,0 +1,11 @@
+{
+  "key": 119,
+  "model": "small",
+  "language": "pt",
+  "refine": "auto",
+  "paste_above": 80,
+  "method": "auto",
+  "terminal": false,
+  "no_sound": false,
+  "delay": 15
+}

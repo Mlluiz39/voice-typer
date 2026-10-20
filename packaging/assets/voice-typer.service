@@ -1,0 +1,17 @@
+[Unit]
+Description=voice-typer — ditado por voz (atalho de teclado)
+Documentation=file://@PREFIX@/README.md
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=@PREFIX@
+ExecStart=@PREFIX@/.venv/bin/python -u @PREFIX@/dictate.py
+Restart=on-failure
+RestartSec=5
+# Sem NoNewPrivileges: o daemon se re-executa com `sg input` para ler
+# /dev/input, e isso exige setgid/setgroups.
+
+[Install]
+WantedBy=graphical-session.target

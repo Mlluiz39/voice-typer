@@ -1,0 +1,14 @@
+# Vocabulário para enviesar o reconhecimento (vai como `hotwords`).
+# Uma expressão por linha. Use para nomes próprios, jargão e termos técnicos:
+# o modelo passa a preferi-los em vez de inventar variantes.
+#
+# Este arquivo é o template público. Seus termos pessoais ficam em
+#   ~/.config/voice-typer/vocabulary.txt
+# e são combinados com este — assim config pessoal não vai para o repositório.
+#
+# Custo: zero de latência (atua antes do erro, não depois).
+
+# exemplos — substitua pelos seus
+# Kubernetes
+# PostgreSQL
+# nota fiscal

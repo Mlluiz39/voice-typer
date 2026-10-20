@@ -1,0 +1,19 @@
+# ambientes virtuais
+.venv/
+.pkgvenv/
+__pycache__/
+*.pyc
+
+# segredos — NUNCA versionar (contém a chave do roteador de LLM)
+llm.env
+*.env
+!.env.example
+
+# artefatos de build
+*.deb
+packaging/root/
+
+# dados locais e áudio de teste
+amostra.wav
+*.wav
+settings.local.json

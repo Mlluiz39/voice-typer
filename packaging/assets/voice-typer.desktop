@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=voice-typer
+GenericName=Ditado por voz
+Comment=Fale e o texto aparece no campo focado de qualquer aplicativo
+Exec=voice-typer-gui
+Icon=voice-typer
+Terminal=false
+Categories=Utility;Accessibility;
+Keywords=ditado;voz;speech;dictation;whisper;
+StartupNotify=false
